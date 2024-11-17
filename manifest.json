@@ -2,7 +2,7 @@
   "id": "itsbryanman.ReptarAddon",
   "version": "0.1.0",
   "name": "Reptar Addon",
-  logo: "https://raw.githubusercontent.com/itsbryanman/ReptarAddon/main/reptar.png",
+  "logo": "https://raw.githubusercontent.com/itsbryanman/ReptarAddon/main/reptar.png",
   "description": "An addon that provides  streams for movies and series.",
   "resources": ["catalog", "meta", "stream"],
   "types": ["movie", "series"],
