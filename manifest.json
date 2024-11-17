@@ -1,0 +1,20 @@
+{
+  "id": "itsbryanman.ReptarAddon",
+  "version": "0.1.0",
+  "name": "Reptar Addon",
+  "description": "An addon that provides  streams for movies and series.",
+  "resources": ["catalog", "meta", "stream"],
+  "types": ["movie", "series"],
+  "catalogs": [
+    {
+      "type": "movie",
+      "id": "reptar-movies",
+      "name": "Reptar Movies"
+    },
+    {
+      "type": "series",
+      "id": "reptar-series",
+      "name": "Reptar Series"
+    }
+  ]
+}
