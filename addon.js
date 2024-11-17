@@ -3,111 +3,109 @@ const axios = require("axios");
 
 const manifest = {
   id: "community.Reptar",
-  version: "0.1.0",
-  name: "Reptar Addon",
-  description: "Fetches torrent sources for movies and TV shows.",
-  logo: "https://raw.githubusercontent.com/itsbryanman/ReptarAddon/main/reptar-icon.png",
+  version: "0.2.0",
+  name: "Reptar Movies and Series",
+  description: "Find popular movies and TV shows using Reptar with streams!",
   resources: ["catalog", "meta", "stream"],
   types: ["movie", "series"],
   catalogs: [
-    {
-      type: "movie",
-      id: "reptar-top-movies",
-      name: "Reptar Movies",
-    },
-    {
-      type: "series",
-      id: "reptar-top-series",
-      name: "Reptar Series",
-    },
+    { type: "movie", id: "reptar-movie-catalog", name: "Reptar Movies" },
+    { type: "series", id: "reptar-series-catalog", name: "Reptar Series" },
   ],
+  idPrefixes: ["tt"], // IMDb ID prefix
+  logo: "reptar.png",
 };
 
 const builder = new addonBuilder(manifest);
 
-const API_BASE_URL = "https://yts.mx/api/v2";
-const TORRENT_API = `${API_BASE_URL}/list_movies.json`;
+// TMDb API Configuration
+const TMDB_API_KEY = "1db1e7057b49dd2e81d9e188bd2edb54"; // Your API key
+const TMDB_BASE_URL = "https://api.themoviedb.org/3";
+const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w500";
 
-async function fetchCatalog(type, extra) {
+// Fetch catalog (popular movies/series)
+async function fetchCatalog(type) {
+  const url = `${TMDB_BASE_URL}/${type === "movie" ? "movie/popular" : "tv/popular"}`;
   try {
-    const response = await axios.get(TORRENT_API, {
-      params: {
-        genre: extra.genre || undefined,
-        limit: 20,
-        sort_by: "rating",
-      },
+    const response = await axios.get(url, {
+      params: { api_key: TMDB_API_KEY },
     });
-    const movies = response.data.data.movies || [];
-    return movies.map((movie) => ({
-      id: `tt${movie.imdb_code}`,
-      type: "movie",
-      name: movie.title,
-      poster: movie.medium_cover_image,
-      description: movie.summary,
-      year: movie.year,
-      runtime: movie.runtime,
-      genres: movie.genres,
+    const results = response.data.results.map((item) => ({
+      id: `tt${item.id}`, // Use "tt" prefix for compatibility
+      type,
+      name: item.title || item.name,
+      poster: `${TMDB_IMAGE_URL}${item.poster_path}`,
+      description: item.overview,
+      year: (item.release_date || item.first_air_date || "").split("-")[0],
     }));
-  } catch (error) {
-    console.error("Error in fetchCatalog:", error.message);
+    return results;
+  } catch (err) {
+    console.error("Error fetching catalog:", err.message);
     return [];
   }
 }
 
-async function fetchMeta(id) {
+// Fetch metadata for a specific movie/series
+async function fetchMeta(id, type) {
+  const url = `${TMDB_BASE_URL}/${type === "movie" ? "movie" : "tv"}/${id.replace("tt", "")}`;
   try {
-    const response = await axios.get(`${API_BASE_URL}/movie_details.json`, {
-      params: { imdb_id: id },
+    const response = await axios.get(url, {
+      params: { api_key: TMDB_API_KEY },
     });
-    const movie = response.data.data.movie;
+    const data = response.data;
     return {
-      id: `tt${movie.imdb_code}`,
-      type: "movie",
-      name: movie.title,
-      poster: movie.large_cover_image,
-      description: movie.description_full,
-      year: movie.year,
-      runtime: movie.runtime,
-      genres: movie.genres,
-      background: movie.background_image_original,
+      id: `tt${data.id}`,
+      type,
+      name: data.title || data.name,
+      poster: `${TMDB_IMAGE_URL}${data.poster_path}`,
+      background: `${TMDB_IMAGE_URL}${data.backdrop_path}`,
+      description: data.overview,
+      runtime: data.runtime || data.episode_run_time?.[0] || 0,
+      genres: data.genres.map((g) => g.name),
+      year: (data.release_date || data.first_air_date || "").split("-")[0],
     };
-  } catch (error) {
-    console.error("Error in fetchMeta:", error.message);
+  } catch (err) {
+    console.error("Error fetching metadata:", err.message);
     return null;
   }
 }
 
+// Example stream handler (replace with actual torrent scraping)
 async function fetchStreams(id) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/movie_details.json`, {
-      params: { imdb_id: id },
-    });
-    const movie = response.data.data.movie;
-    const streams = movie.torrents.map((torrent) => ({
-      title: `${torrent.quality} - ${torrent.type}`,
-      infoHash: torrent.hash,
-      fileIdx: 0,
-    }));
-    return streams;
-  } catch (error) {
-    console.error("Error in fetchStreams:", error.message);
+    // Placeholder streams - Replace with actual torrent integration
+    return [
+      {
+        title: "1080p - Example Stream",
+        url: "https://example.com/video.mp4",
+      },
+      {
+        title: "720p - Example Stream",
+        url: "https://example.com/video720p.mp4",
+      },
+    ];
+  } catch (err) {
+    console.error("Error fetching streams:", err.message);
     return [];
   }
 }
 
-builder.defineCatalogHandler(async ({ type, id, extra }) => {
-  const metas = await fetchCatalog(type, extra);
-  return Promise.resolve({ metas });
+// Define catalog handler
+builder.defineCatalogHandler(async ({ type }) => {
+  const metas = await fetchCatalog(type);
+  return { metas };
 });
 
+// Define metadata handler
 builder.defineMetaHandler(async ({ type, id }) => {
-  const meta = await fetchMeta(id);
-  return Promise.resolve({ meta });
+  const meta = await fetchMeta(id, type);
+  return { meta };
 });
 
-builder.defineStreamHandler(async ({ type, id }) => {
+// Define stream handler
+builder.defineStreamHandler(async ({ id }) => {
   const streams = await fetchStreams(id);
-  return Promise.resolve({ streams });
+  return { streams };
 });
 
 module.exports = builder.getInterface();
