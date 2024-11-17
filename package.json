@@ -1,0 +1,13 @@
+{
+	"name": "stremio-addon-Reptar",
+	"version": "0.0.1",
+	"description": "Reptar fetches available torrent sources and provides them as streaming options, eliminating the need for downloading and enabling direct playback through Stremio. Think of it as your gateway to endless entertainment—fast, flexible, and fuss-free",
+	"scripts": {
+		"start": "node server.js"
+	},
+	"dependencies": {
+		"axios": "^1.7.7",
+		"dotenv": "^16.4.5",
+		"stremio-addon-sdk": "1.1.x"
+	}
+}
