@@ -48,7 +48,7 @@ async function fetchCatalog(type, extra) {
       },
     });
 
-    const movies = response.data.data?.movies || [];
+    const movies = response.data?.data?.movies || [];
     return movies.map((movie) => ({
       id: `tt${movie.imdb_code}`,
       type: "movie",
@@ -74,7 +74,7 @@ async function fetchMeta(id) {
       },
     });
 
-    const movie = response.data.data?.movie;
+    const movie = response.data?.data?.movie;
     if (!movie) {
       console.error(`Movie not found for ID: ${id}`);
       return null;
@@ -102,7 +102,7 @@ async function fetchStreams(id) {
     const streams = [];
 
     // Fetch from Milkee
-    const milkeeResponse = await axios.get(`https://milkie.cc/api/torrent`, {
+    const milkeeResponse = await axios.get("https://milkie.cc/api/torrent", {
       params: { id },
       headers: {
         Authorization: MILKEE_API_KEY,
@@ -183,3 +183,4 @@ builder.defineStreamHandler(async ({ type, id }) => {
 });
 
 module.exports = builder.getInterface();
+
