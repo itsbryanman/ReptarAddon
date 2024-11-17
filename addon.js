@@ -40,14 +40,15 @@ async function fetchCatalog(type, extra) {
     const response = await axios.get(YTS_API_URL, {
       params: {
         limit: 20,
-        genre: extra.genre || undefined,
+        genre: extra?.genre || undefined,
         sort_by: "rating",
       },
       headers: {
         "x-rapidapi-key": RAPIDAPI_KEY,
       },
     });
-    const movies = response.data.data.movies || [];
+
+    const movies = response.data.data?.movies || [];
     return movies.map((movie) => ({
       id: `tt${movie.imdb_code}`,
       type: "movie",
@@ -72,7 +73,13 @@ async function fetchMeta(id) {
         "x-rapidapi-key": RAPIDAPI_KEY,
       },
     });
-    const movie = response.data.data.movie;
+
+    const movie = response.data.data?.movie;
+    if (!movie) {
+      console.error(`Movie not found for ID: ${id}`);
+      return null;
+    }
+
     return {
       id: `tt${movie.imdb_code}`,
       type: "movie",
@@ -92,33 +99,17 @@ async function fetchMeta(id) {
 // Fetch streams for a movie or series
 async function fetchStreams(id) {
   try {
+    const streams = [];
+
     // Fetch from Milkee
     const milkeeResponse = await axios.get(`https://milkie.cc/api/torrent`, {
       params: { id },
       headers: {
-        "Authorization": MILKEE_API_KEY,
+        Authorization: MILKEE_API_KEY,
       },
     });
 
-    // Fetch from Torrent Search
-    const torrentSearchResponse = await axios.get(TORRENT_SEARCH_API_URL, {
-      params: { query: id },
-      headers: {
-        "x-rapidapi-key": RAPIDAPI_KEY,
-      },
-    });
-
-    // Fetch from The Pirate Bay
-    const pirateBayResponse = await axios.get(THE_PIRATE_BAY_API_URL, {
-      headers: {
-        "x-rapidapi-key": RAPIDAPI_KEY,
-      },
-    });
-
-    // Combine results into one stream list
-    const streams = [];
-
-    if (milkeeResponse.data) {
+    if (milkeeResponse.data?.torrents) {
       streams.push(
         ...milkeeResponse.data.torrents.map((torrent) => ({
           title: `${torrent.quality} - ${torrent.type}`,
@@ -128,7 +119,15 @@ async function fetchStreams(id) {
       );
     }
 
-    if (torrentSearchResponse.data) {
+    // Fetch from Torrent Search
+    const torrentSearchResponse = await axios.get(TORRENT_SEARCH_API_URL, {
+      params: { query: id },
+      headers: {
+        "x-rapidapi-key": RAPIDAPI_KEY,
+      },
+    });
+
+    if (torrentSearchResponse.data?.results) {
       streams.push(
         ...torrentSearchResponse.data.results.map((result) => ({
           title: result.title,
@@ -138,7 +137,14 @@ async function fetchStreams(id) {
       );
     }
 
-    if (pirateBayResponse.data) {
+    // Fetch from The Pirate Bay
+    const pirateBayResponse = await axios.get(THE_PIRATE_BAY_API_URL, {
+      headers: {
+        "x-rapidapi-key": RAPIDAPI_KEY,
+      },
+    });
+
+    if (pirateBayResponse.data?.torrents) {
       streams.push(
         ...pirateBayResponse.data.torrents.map((torrent) => ({
           title: torrent.title,
@@ -177,4 +183,3 @@ builder.defineStreamHandler(async ({ type, id }) => {
 });
 
 module.exports = builder.getInterface();
-
