@@ -1,10 +1,14 @@
 const { addonBuilder } = require("stremio-addon-sdk");
 const axios = require("axios");
 
-// Manifest configuration
 const manifest = {
   id: "community.Reptar",
   version: "0.1.0",
+  name: "Reptar Addon",
+  description: "Fetches torrent sources for movies and TV shows.",
+  logo: "https://raw.githubusercontent.com/itsbryanman/ReptarAddon/main/reptar-icon.png",
+  resources: ["catalog", "meta", "stream"],
+  types: ["movie", "series"],
   catalogs: [
     {
       type: "movie",
@@ -17,21 +21,13 @@ const manifest = {
       name: "Reptar Series",
     },
   ],
-  resources: ["catalog", "meta", "stream", "subtitles"], // Include subtitles if you need them
-  types: ["movie", "series"],
-  name: "Reptar",
-  description:
-    "Reptar fetches torrent sources and provides them as streaming options, enabling direct playback through Stremio.",
-  logo: "http://65.109.147.17:60761/reptar.png",
 };
 
 const builder = new addonBuilder(manifest);
 
-// Example API configuration
 const API_BASE_URL = "https://yts.mx/api/v2";
 const TORRENT_API = `${API_BASE_URL}/list_movies.json`;
 
-// Fetch movies for the catalog
 async function fetchCatalog(type, extra) {
   try {
     const response = await axios.get(TORRENT_API, {
@@ -54,11 +50,10 @@ async function fetchCatalog(type, extra) {
     }));
   } catch (error) {
     console.error("Error in fetchCatalog:", error.message);
-    return []; // Return an empty array if something goes wrong
+    return [];
   }
 }
 
-// Fetch metadata for a specific item
 async function fetchMeta(id) {
   try {
     const response = await axios.get(`${API_BASE_URL}/movie_details.json`, {
@@ -78,11 +73,10 @@ async function fetchMeta(id) {
     };
   } catch (error) {
     console.error("Error in fetchMeta:", error.message);
-    return null; // Return null if something goes wrong
+    return null;
   }
 }
 
-// Fetch streams for a specific item
 async function fetchStreams(id) {
   try {
     const response = await axios.get(`${API_BASE_URL}/movie_details.json`, {
@@ -92,59 +86,28 @@ async function fetchStreams(id) {
     const streams = movie.torrents.map((torrent) => ({
       title: `${torrent.quality} - ${torrent.type}`,
       infoHash: torrent.hash,
-      fileIdx: 0, // Adjust if necessary for specific files
+      fileIdx: 0,
     }));
     return streams;
   } catch (error) {
     console.error("Error in fetchStreams:", error.message);
-    return []; // Return an empty array if something goes wrong
+    return [];
   }
 }
 
-// Fetch subtitles (optional)
-async function fetchSubtitles(id) {
-  console.log(`Subtitles request for ${id}`);
-  // Example logic for subtitles: Replace with a real subtitle API integration
-  return [
-    {
-      lang: "en",
-      url: "https://example.com/subtitles/movie.en.srt",
-      id: `${id}-en`,
-    },
-    {
-      lang: "es",
-      url: "https://example.com/subtitles/movie.es.srt",
-      id: `${id}-es`,
-    },
-  ];
-}
-
-// Define catalog handler
 builder.defineCatalogHandler(async ({ type, id, extra }) => {
-  console.log(`Catalog request for ${type} with ID ${id}`);
   const metas = await fetchCatalog(type, extra);
   return Promise.resolve({ metas });
 });
 
-// Define meta handler
 builder.defineMetaHandler(async ({ type, id }) => {
-  console.log(`Meta request for ${type} with ID ${id}`);
   const meta = await fetchMeta(id);
   return Promise.resolve({ meta });
 });
 
-// Define stream handler
 builder.defineStreamHandler(async ({ type, id }) => {
-  console.log(`Stream request for ${type} with ID ${id}`);
   const streams = await fetchStreams(id);
   return Promise.resolve({ streams });
-});
-
-// Define subtitles handler
-builder.defineSubtitlesHandler(async ({ type, id }) => {
-  console.log(`Subtitles request for ${type} with ID ${id}`);
-  const subtitles = await fetchSubtitles(id);
-  return Promise.resolve({ subtitles });
 });
 
 module.exports = builder.getInterface();
