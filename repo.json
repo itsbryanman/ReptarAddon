@@ -1,0 +1,11 @@
+{
+  "addons": [
+    {
+      "name": "Reptar Addon",
+      "logo": "https://raw.githubusercontent.com/itsbryanman/ReptarAddon/main/reptar-icon.png",
+      "description": "Fetches torrent sources for movies and TV shows.",
+      "types": ["movie", "series"],
+      "manifest": "https://raw.githubusercontent.com/itsbryanman/ReptarAddon/main/manifest.json"
+    }
+  ]
+}
